@@ -3,6 +3,6 @@
   "description": "xHamster.com porn video extension",
   "manifestVersion": 1,
   "pluginLists": [
-    "https://raw.githubusercontent.com/AiCurv/cloudstream-extensions/builds/xhamster/plugins.json"
+    "https://raw.githubusercontent.com/AiCurv/cloudstream-extensions/builds/plugins.json"
   ]
 }
