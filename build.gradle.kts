@@ -30,7 +30,6 @@ subprojects {
     apply(plugin = "com.lagradost.cloudstream3.gradle")
 
     extensions.configure<CloudstreamExtension> {
-        setRepo("AiCurv/cloudstream-extensions")
     }
 
     extensions.configure<BaseExtension> {

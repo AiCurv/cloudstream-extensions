@@ -23,13 +23,39 @@ jobs:
       - run: |
           cd $GITHUB_WORKSPACE/src
           chmod +x gradlew
-          ./gradlew make makePluginsJson
+          ./gradlew make
           cp **/build/*.cs3 $GITHUB_WORKSPACE/builds/ 2>/dev/null || true
-          cp build/plugins.json $GITHUB_WORKSPACE/builds/ 2>/dev/null || true
+      - run: |
+          # Get release info for version 1.0.0
+          ASSET_URL="https://github.com/AiCurv/cloudstream-extensions/releases/download/v1.0.0/XHamsterProvider.cs3"
+          echo "Using release asset: $ASSET_URL"
       - run: |
           cd $GITHUB_WORKSPACE/builds
+          # Only update plugins.json with release URL, keep .cs3 from releases
+          cat > plugins.json << 'EOF'
+          [
+            {
+              "name": "XHamsterProvider",
+              "description": "XHamster - Free Porn Videos & XXX Movies",
+              "version": 1,
+              "internalName": "XHamsterProvider",
+              "apiVersion": 1,
+              "language": "en",
+              "authors": ["AiCurv"],
+              "tvTypes": ["NSFW"],
+              "status": 1,
+              "iconUrl": "https://www.google.com/s2/favicons?domain=xhamster.com&sz=%size%",
+              "url": "https://github.com/AiCurv/cloudstream-extensions/releases/download/v1.0.0/XHamsterProvider.cs3",
+              "repositoryUrl": "https://github.com/AiCurv/cloudstream-extensions",
+              "fileHash": "sha256-013cfc38423ceda149dc9a8baf5c83e98288604404022ad5fe52f9e20c5e778a",
+              "fileSize": 15927
+            }
+          ]
+          EOF
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git add .
-          git commit --amend -m "Build $GITHUB_SHA" || exit 0
-          git push --force
+          git add plugins.json
+          # Only commit if there are changes (don't fail if identical)
+          git diff --cached --quiet && exit 0 || true
+          git commit -m "Build $GITHUB_SHA" || exit 0
+          git push
