@@ -1,0 +1,35 @@
+name: Build
+permissions:
+  contents: write
+concurrency:
+  group: "build"
+  cancel-in-progress: true
+on:
+  push:
+    branches: [master, main]
+    paths-ignore: ['*.md']
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with: { path: "src" }
+      - uses: actions/checkout@master
+        with: { ref: "builds", path: "builds" }
+      - run: rm -f $GITHUB_WORKSPACE/builds/*.cs3 || true
+      - uses: actions/setup-java@v1
+        with: { java-version: 17 }
+      - uses: android-actions/setup-android@v2
+      - run: |
+          cd $GITHUB_WORKSPACE/src
+          chmod +x gradlew
+          ./gradlew make makePluginsJson
+          cp **/build/*.cs3 $GITHUB_WORKSPACE/builds/ 2>/dev/null || true
+          cp build/plugins.json $GITHUB_WORKSPACE/builds/ 2>/dev/null || true
+      - run: |
+          cd $GITHUB_WORKSPACE/builds
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add .
+          git commit --amend -m "Build $GITHUB_SHA" || exit 0
+          git push --force
