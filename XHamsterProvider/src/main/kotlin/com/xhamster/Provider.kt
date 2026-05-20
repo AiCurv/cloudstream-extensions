@@ -1,55 +1,20 @@
 package com.xhamster
 
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 
-data class XhamsterVideoThumb(
-    val id: Int,
-    val duration: Int,
-    val created: Long,
-    val title: String,
-    val thumbId: Int,
-    val videoType: String,
-    val pageURL: String,
-    val thumbURL: String,
-    val imageURL: String,
-    val previewThumbURL: String?,
-    val trailerURL: String?,
-    val views: Long,
-    val landing: XhamsterLanding?
-)
-
-data class XhamsterLanding(
-    val type: String,
-    val id: Int,
-    val name: String,
-    val logo: String?,
-    val link: String
-)
-
-class XHamsterProvider : MainAPI() {
-    override var mainUrl = "https://xhamster.com"
-    override var name = "XHamster"
+class XXDBXProvider : MainAPI() {
+    override var mainUrl = "https://xxdbx.com"
+    override var name = "XXDBX"
     override val supportedTypes = setOf(TvType.NSFW)
     override var lang = "en"
     override val hasMainPage = true
-    override val hasDownloadSupport = true
-    override val hasChromecastSupport = true
-
-    private val jacksonMapper = ObjectMapper().registerKotlinModule()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
     override val mainPage = mainPageOf(
         "$mainUrl/" to "Newest",
         "$mainUrl/most-popular" to "Most Popular",
         "$mainUrl/longest" to "Longest",
         "$mainUrl/most-viewed" to "Most Viewed",
-        "$mainUrl/top" to "Top Rated",
-        "$mainUrl/newest" to "Latest",
     )
 
     private fun String.fixUrl(): String = when {
@@ -58,130 +23,70 @@ class XHamsterProvider : MainAPI() {
         else -> this
     }
 
-    private fun parseWindowInitials(html: String): Map<String, Any>? {
-        val regex = Regex("""window\.initials\s*=\s*(\{.{1,500000})\s*;</script>""")
-        val match = regex.find(html) ?: return null
-        val jsonStr = match.groupValues[1]
-        return try {
-            jacksonMapper.readValue(jsonStr, object : TypeReference<Map<String, Any>>() {})
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun extractVideosFromInitials(initials: Map<String, Any>?): List<XhamsterVideoThumb> {
-        if (initials == null) return emptyList()
-        val videoListProps = initials["layoutPage"] as? Map<String, Any>
-            ?: return emptyList()
-        val thumbProps = videoListProps["videoListProps"] as? Map<String, Any>
-            ?: return emptyList()
-        val videos = thumbProps["videoThumbProps"] as? List<Map<String, Any>>
-            ?: return emptyList()
-
-        return videos.mapNotNull { v ->
-            try {
-                XhamsterVideoThumb(
-                    id = (v["id"] as? Number)?.toInt() ?: return@mapNotNull null,
-                    duration = (v["duration"] as? Number)?.toInt() ?: 0,
-                    created = (v["created"] as? Number)?.toLong() ?: 0L,
-                    title = v["title"] as? String ?: "",
-                    thumbId = (v["thumbId"] as? Number)?.toInt() ?: 0,
-                    videoType = v["videoType"] as? String ?: "video",
-                    pageURL = (v["pageURL"] as? String)?.fixUrl() ?: "",
-                    thumbURL = (v["thumbURL"] as? String)?.fixUrl() ?: "",
-                    imageURL = (v["imageURL"] as? String)?.fixUrl() ?: "",
-                    previewThumbURL = v["previewThumbURL"] as? String,
-                    trailerURL = v["trailerURL"] as? String,
-                    views = (v["views"] as? Number)?.toLong() ?: 0L,
-                    landing = (v["landing"] as? Map<String, Any>)?.let { l ->
-                        XhamsterLanding(
-                            type = l["type"] as? String ?: "",
-                            id = (l["id"] as? Number)?.toInt() ?: 0,
-                            name = l["name"] as? String ?: "",
-                            logo = l["logo"] as? String,
-                            link = l["link"] as? String ?: ""
-                        )
-                    }
-                )
-            } catch (e: Exception) { null }
+    private fun parseVideo(el: org.jsoup.nodes.Element): SearchResponse? {
+        val a = el.selectFirst("a[href*=/view/]") ?: return null
+        val href = a.attr("abs:href").ifEmpty { a.attr("href") }.fixUrl()
+        val title = el.selectFirst(".v_title")?.text()?.trim() ?: return null
+        val thumb = el.selectFirst(".v_pic img")?.let {
+            it.attr("data-src").ifEmpty { it.attr("src") }
+        }?.fixUrl()
+        val duration = el.selectFirst(".v_dur")?.text()?.trim()
+        return newMovieSearchResponse(title, href, TvType.NSFW) {
+            posterUrl = thumb
         }
     }
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = if (page > 1) "${request.data}?page=$page" else request.data
-        val html = app.get(url).text
-        val initials = parseWindowInitials(html)
-        val videos = extractVideosFromInitials(initials)
-        val hasNext = page < 10
-
-        val homePageVideos = videos.map { v ->
-            newMovieSearchResponse(v.title, v.pageURL, TvType.NSFW) {
-                posterUrl = v.imageURL.fixUrl()
-            }
-        }
-
-        return newHomePageResponse(listOf(HomePageList(request.name, homePageVideos)), hasNext)
+        val doc = app.get(url).document
+        val videos = doc.select(".v").mapNotNull { parseVideo(it) }
+        val hasNext = doc.select(".pagina a[href*=page]").first() != null
+        return newHomePageResponse(listOf(HomePageList(request.name, videos)), hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val q = query.trim().replace(" ", "+")
-        val html = app.get("$mainUrl/search/$q").text
-        val initials = parseWindowInitials(html)
-        val videos = extractVideosFromInitials(initials)
-
-        return videos.map { v ->
-            newMovieSearchResponse(v.title, v.pageURL, TvType.NSFW) {
-                posterUrl = v.imageURL.fixUrl()
-            }
-        }
+        val q = query.trim().replace(" ", "-")
+        val doc = app.get("$mainUrl/search/$q").document
+        return doc.select(".v").mapNotNull { parseVideo(it) }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val html = app.get(url).text
-        val initials = parseWindowInitials(html) ?: throw Error("No video data found")
-
-        val vmp = initials["videoModelComponent"] as? Map<String, Any>
-        val hlsMap = vmp?.get("hls") as? Map<String, Any>
-        val sources = hlsMap?.get("sources") as? Map<String, String> ?: emptyMap()
-        val poster = hlsMap?.get("poster") as? String ?: ""
-        val tagsList = vmp?.get("tags") as? List<Map<String, String>> ?: emptyList()
-        val catsList = vmp?.get("categories") as? List<Map<String, String>> ?: emptyList()
-
-        val title = vmp?.get("title") as? String ?: "Unknown"
-        val desc = vmp?.get("description") as? String ?: ""
-
-        val tags = tagsList.mapNotNull { it["name"] }
-        val categories = catsList.mapNotNull { it["name"] }
-        val allTags = (categories + tags).distinct()
-
-        val videoUrl = sources.entries.firstOrNull()?.value ?: ""
-
-        return newMovieLoadResponse(title, url, TvType.NSFW, videoUrl) {
-            this.posterUrl = poster.fixUrl()
+        val doc = app.get(url).document
+        val title = doc.selectFirst("article h1")?.text()?.trim() ?: "Unknown"
+        val poster = doc.selectFirst("video[poster]")?.attr("poster")?.fixUrl()
+        val desc = doc.selectFirst("#desc")?.text()?.trim()
+        val tags = doc.select(".tags a[href*=/search/]").mapNotNull { it.text()?.trim() }
+        return newMovieLoadResponse(title, url, TvType.NSFW, url) {
+            this.posterUrl = poster
             this.plot = desc
-            this.tags = allTags
+            this.tags = tags
         }
     }
 
     override suspend fun loadLinks(
-        data: String,
-        isCasting: Boolean,
+        data: String, isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        if (data.isEmpty()) return false
-
-        callback(
-            ExtractorLink(
-                source = name,
-                name = "$name HLS",
-                url = data.fixUrl(),
-                referer = mainUrl,
-                quality = Qualities.Unknown.value,
-                type = ExtractorLinkType.M3U8
-            )
-        )
-
+        val doc = app.get(data).document
+        doc.select("video source").forEach { src ->
+            val url = src.attr("src").fixUrl()
+            val label = src.attr("title")
+            if (url.isNotEmpty() && url.contains(".mp4")) {
+                callback(ExtractorLink(
+                    source = name, name = "$name $label", url = url,
+                    referer = data,
+                    quality = when(label) {
+                        "1080p" -> Qualities.P1080.value
+                        "720p" -> Qualities.P720.value
+                        "480p" -> Qualities.P480.value
+                        "360p" -> Qualities.P360.value
+                        else -> Qualities.Unknown.value
+                    },
+                    type = ExtractorLinkType.VIDEO
+                ))
+            }
+        }
         return true
     }
 }

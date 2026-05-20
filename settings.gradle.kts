@@ -1,1 +1,1 @@
-include(":XHamsterProvider")
+include(":XXDBXProvider")
