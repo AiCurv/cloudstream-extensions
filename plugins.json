@@ -1,0 +1,22 @@
+[
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=xhamster.com&sz=%size%",
+        "fileHash": "sha256-013cfc38423ceda149dc9a8baf5c83e98288604404022ad5fe52f9e20c5e778a",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/AiCurv/cloudstream-extensions",
+        "fileSize": 15927,
+        "status": 1,
+        "language": "en",
+        "authors": [
+            "AiCurv"
+        ],
+        "tvTypes": [
+            "NSFW"
+        ],
+        "version": 1,
+        "internalName": "XHamsterProvider",
+        "description": "XHamster - Free Porn Videos & XXX Movies",
+        "url": "https://raw.githubusercontent.com/AiCurv/cloudstream-extensions/builds/XHamsterProvider.cs3",
+        "name": "XHamsterProvider"
+    }
+]
