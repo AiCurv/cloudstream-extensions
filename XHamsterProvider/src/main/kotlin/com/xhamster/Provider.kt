@@ -2,7 +2,6 @@ package com.xhamster
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -29,67 +28,6 @@ data class XhamsterLanding(
     val name: String,
     val logo: String?,
     val link: String
-)
-
-data class XhamsterVideoPage(
-    val videoModelComponent: XhamsterVideoModel?
-)
-
-data class XhamsterVideoModel(
-    val id: Int?,
-    val title: String?,
-    val duration: Int?,
-    val views: Long?,
-    val created: Long?,
-    val upVotePercentage: Int?,
-    val downVoteCount: Int?,
-    val isPremiumOnly: Boolean?,
-    val isPremiumDownload: Boolean?,
-    val isLiked: Boolean?,
-    val isDisliked: Boolean?,
-    val isSaved: Boolean?,
-    val isDownloadable: Boolean?,
-    val isPurchased: Boolean?,
-    val comments: Int?,
-    val pictures: List<String>?,
-    val model: XhamsterModel?,
-    val tags: List<XhamsterTag>?,
-    val categories: List<XhamsterCategory>?,
-    val hls: XhamsterHls?
-)
-
-data class XhamsterModel(
-    val id: Int?,
-    val name: String?,
-    val username: String?,
-    val logo: String?,
-    val link: String?,
-    val subscribers: Int?,
-    val totalViews: Long?,
-    val totalVideos: Int?,
-    val isVerified: Boolean?
-)
-
-data class XhamsterTag(
-    val name: String,
-    val link: String
-)
-
-data class XhamsterCategory(
-    val name: String,
-    val link: String
-)
-
-data class XhamsterHls(
-    val sources: Map<String, String>?,
-    val poster: String?,
-    val trailer: XhamsterTrailer?
-)
-
-data class XhamsterTrailer(
-    val url: String?,
-    val poster: String?,
-    val duration: Int?
 )
 
 class XHamsterProvider : MainAPI() {
@@ -173,18 +111,16 @@ class XHamsterProvider : MainAPI() {
         val html = app.get(url).text
         val initials = parseWindowInitials(html)
         val videos = extractVideosFromInitials(initials)
-
         val hasNext = page < 10
 
         val homePageVideos = videos.map { v ->
-            newMovieSearchResponse(
+            SearchResponse(
                 name = v.title,
                 url = v.pageURL,
                 type = TvType.NSFW,
-                posterUrl = v.imageURL.fixUrl()
-            ) {
-                this.year = null
-            }
+                posterUrl = v.imageURL.fixUrl(),
+                year = null
+            )
         }
 
         return newHomePageResponse(listOf(HomePageList(request.name, homePageVideos)), hasNext)
@@ -194,71 +130,15 @@ class XHamsterProvider : MainAPI() {
         val q = query.trim().replace(" ", "+")
         val html = app.get("$mainUrl/search/$q").text
         val initials = parseWindowInitials(html)
-
-        val videos = mutableListOf<XhamsterVideoThumb>()
-
-        val searchVideoSuggestions = initials?.get("searchVideoSuggestions") as? Map<String, Any>
-        val pageVideos = searchVideoSuggestions?.get("pageVideos") as? List<Map<String, Any>> ?: emptyList()
-
-        val xhlMlSource = initials?.get("xhlMlSource") as? Map<String, Any>
-        val mlPayload = xhlMlSource?.get("payload") as? Map<String, Any>
-        val recommendedVideos = mlPayload?.get("pageVideos") as? List<Number> ?: emptyList()
-
-        for (v in pageVideos) {
-            try {
-                videos.add(
-                    XhamsterVideoThumb(
-                        id = (v["id"] as? Number)?.toInt() ?: return@forEach,
-                        duration = (v["duration"] as? Number)?.toInt() ?: 0,
-                        created = (v["created"] as? Number)?.toLong() ?: 0L,
-                        title = v["title"] as? String ?: "",
-                        thumbId = (v["thumbId"] as? Number)?.toInt() ?: 0,
-                        videoType = v["videoType"] as? String ?: "video",
-                        pageURL = (v["pageURL"] as? String)?.fixUrl() ?: "",
-                        thumbURL = (v["thumbURL"] as? String)?.fixUrl() ?: "",
-                        imageURL = (v["imageURL"] as? String)?.fixUrl() ?: "",
-                        previewThumbURL = v["previewThumbURL"] as? String,
-                        trailerURL = v["trailerURL"] as? String,
-                        views = (v["views"] as? Number)?.toLong() ?: 0L,
-                        landing = null
-                    )
-                )
-            } catch (e: Exception) { }
-        }
-
-        if (videos.isEmpty()) {
-            val videoListProps = initials?.get("layoutPage") as? Map<String, Any>
-            val vlp = videoListProps?.get("videoListProps") as? Map<String, Any>
-            val thumbProps = vlp?.get("videoThumbProps") as? List<Map<String, Any>> ?: emptyList()
-            for (v in thumbProps) {
-                try {
-                    videos.add(
-                        XhamsterVideoThumb(
-                            id = (v["id"] as? Number)?.toInt() ?: continue,
-                            duration = (v["duration"] as? Number)?.toInt() ?: 0,
-                            created = (v["created"] as? Number)?.toLong() ?: 0L,
-                            title = v["title"] as? String ?: "",
-                            thumbId = (v["thumbId"] as? Number)?.toInt() ?: 0,
-                            videoType = v["videoType"] as? String ?: "video",
-                            pageURL = (v["pageURL"] as? String)?.fixUrl() ?: "",
-                            thumbURL = (v["thumbURL"] as? String)?.fixUrl() ?: "",
-                            imageURL = (v["imageURL"] as? String)?.fixUrl() ?: "",
-                            previewThumbURL = v["previewThumbURL"] as? String,
-                            trailerURL = v["trailerURL"] as? String,
-                            views = (v["views"] as? Number)?.toLong() ?: 0L,
-                            landing = null
-                        )
-                    )
-                } catch (e: Exception) { }
-            }
-        }
+        val videos = extractVideosFromInitials(initials)
 
         return videos.map { v ->
-            newMovieSearchResponse(
+            SearchResponse(
                 name = v.title,
                 url = v.pageURL,
                 type = TvType.NSFW,
-                posterUrl = v.imageURL.fixUrl()
+                posterUrl = v.imageURL.fixUrl(),
+                year = null
             )
         }
     }
@@ -267,14 +147,7 @@ class XHamsterProvider : MainAPI() {
         val html = app.get(url).text
         val initials = parseWindowInitials(html) ?: throw Error("No video data found")
 
-        val videoPage = try {
-            jacksonMapper.readValue<Map<String, Any>>(
-                Regex("""window\.initials\s*=\s*(\{.{1,500000})\s*;</script>""")
-                    .find(html)?.groupValues?.get(1) ?: "{}"
-            )
-        } catch (e: Exception) { null }
-
-        val vmp = videoPage?.get("videoModelComponent") as? Map<String, Any>
+        val vmp = initials["videoModelComponent"] as? Map<String, Any>
         val hlsMap = vmp?.get("hls") as? Map<String, Any>
         val sources = hlsMap?.get("sources") as? Map<String, String> ?: emptyMap()
         val poster = hlsMap?.get("poster") as? String ?: ""
@@ -289,30 +162,22 @@ class XHamsterProvider : MainAPI() {
         val categories = catsList.mapNotNull { it["name"] }
         val allTags = (categories + tags).distinct()
 
-        val actors = modelInfo?.let { m ->
-            listOf(
-                ActorData(
-                    Actor(
-                        name = m["name"] as? String ?: m["username"] as? String ?: "Unknown"
-                    )
-                )
-            )
+        val actorsList = modelInfo?.let { m ->
+            listOf(ActorData(Actor(name = m["name"] as? String ?: m["username"] as? String ?: "Unknown")))
         } ?: emptyList()
-
-        this.actors = actors
 
         val videoUrl = sources.entries.firstOrNull()?.value ?: ""
 
-        return newMovieLoadResponse(
+        return MovieLoadResponse(
             name = title,
             url = url,
             dataUrl = videoUrl,
             type = TvType.NSFW,
-            posterUrl = poster.fixUrl()
-        ) {
-            plot = desc
-            this.tags = allTags
-        }
+            posterUrl = poster.fixUrl(),
+            tags = allTags,
+            plot = desc,
+            actors = actorsList
+        )
     }
 
     override suspend fun loadLinks(
