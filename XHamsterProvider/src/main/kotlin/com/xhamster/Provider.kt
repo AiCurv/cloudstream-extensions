@@ -1,5 +1,6 @@
 package com.xhamster
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
@@ -62,7 +63,7 @@ class XHamsterProvider : MainAPI() {
         val match = regex.find(html) ?: return null
         val jsonStr = match.groupValues[1]
         return try {
-            jacksonMapper.readValue(jsonStr)
+            jacksonMapper.readValue(jsonStr, object : TypeReference<Map<String, Any>>() {})
         } catch (e: Exception) {
             null
         }
@@ -114,12 +115,11 @@ class XHamsterProvider : MainAPI() {
         val hasNext = page < 10
 
         val homePageVideos = videos.map { v ->
-            SearchResponse(
+            newMovieSearchResponse(
                 name = v.title,
                 url = v.pageURL,
                 type = TvType.NSFW,
-                posterUrl = v.imageURL.fixUrl(),
-                year = null
+                posterUrl = v.imageURL.fixUrl()
             )
         }
 
@@ -133,12 +133,11 @@ class XHamsterProvider : MainAPI() {
         val videos = extractVideosFromInitials(initials)
 
         return videos.map { v ->
-            SearchResponse(
+            newMovieSearchResponse(
                 name = v.title,
                 url = v.pageURL,
                 type = TvType.NSFW,
-                posterUrl = v.imageURL.fixUrl(),
-                year = null
+                posterUrl = v.imageURL.fixUrl()
             )
         }
     }
@@ -162,22 +161,13 @@ class XHamsterProvider : MainAPI() {
         val categories = catsList.mapNotNull { it["name"] }
         val allTags = (categories + tags).distinct()
 
-        val actorsList = modelInfo?.let { m ->
-            listOf(ActorData(Actor(name = m["name"] as? String ?: m["username"] as? String ?: "Unknown")))
-        } ?: emptyList()
-
         val videoUrl = sources.entries.firstOrNull()?.value ?: ""
 
-        return MovieLoadResponse(
-            name = title,
-            url = url,
-            dataUrl = videoUrl,
-            type = TvType.NSFW,
-            posterUrl = poster.fixUrl(),
-            tags = allTags,
-            plot = desc,
-            actors = actorsList
-        )
+        return newMovieLoadResponse(title, url, TvType.NSFW, videoUrl) {
+            this.posterUrl = poster.fixUrl()
+            this.plot = desc
+            this.tags = allTags
+        }
     }
 
     override suspend fun loadLinks(
