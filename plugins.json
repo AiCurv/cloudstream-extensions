@@ -1,22 +1,18 @@
 [
-    {
-        "iconUrl": "https://www.google.com/s2/favicons?domain=xhamster.com&sz=%size%",
-        "fileHash": "sha256-013cfc38423ceda149dc9a8baf5c83e98288604404022ad5fe52f9e20c5e778a",
-        "apiVersion": 1,
-        "repositoryUrl": "https://github.com/AiCurv/cloudstream-extensions",
-        "fileSize": 15927,
-        "status": 1,
-        "language": "en",
-        "authors": [
-            "AiCurv"
-        ],
-        "tvTypes": [
-            "NSFW"
-        ],
-        "version": 1,
-        "internalName": "XHamsterProvider",
-        "description": "XHamster - Free Porn Videos & XXX Movies",
-        "url": "https://raw.githubusercontent.com/AiCurv/cloudstream-extensions/builds/XHamsterProvider.cs3",
-        "name": "XHamsterProvider"
-    }
+  {
+    "name": "XHamsterProvider",
+    "description": "XHamster - Free Porn Videos & XXX Movies",
+    "version": 1,
+    "internalName": "XHamsterProvider",
+    "apiVersion": 1,
+    "language": "en",
+    "authors": ["AiCurv"],
+    "tvTypes": ["NSFW"],
+    "status": 1,
+    "iconUrl": "https://www.google.com/s2/favicons?domain=xhamster.com&sz=%size%",
+    "url": "https://github.com/AiCurv/cloudstream-extensions/releases/download/v1.0.0/XHamsterProvider.cs3",
+    "repositoryUrl": "https://github.com/AiCurv/cloudstream-extensions",
+    "fileHash": "sha256-013cfc38423ceda149dc9a8baf5c83e98288604404022ad5fe52f9e20c5e778a",
+    "fileSize": 15927
+  }
 ]
