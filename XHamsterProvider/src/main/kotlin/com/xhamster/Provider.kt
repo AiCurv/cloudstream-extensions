@@ -115,12 +115,9 @@ class XHamsterProvider : MainAPI() {
         val hasNext = page < 10
 
         val homePageVideos = videos.map { v ->
-            newMovieSearchResponse(
-                name = v.title,
-                url = v.pageURL,
-                type = TvType.NSFW,
+            newMovieSearchResponse(v.title, v.pageURL, TvType.NSFW) {
                 posterUrl = v.imageURL.fixUrl()
-            )
+            }
         }
 
         return newHomePageResponse(listOf(HomePageList(request.name, homePageVideos)), hasNext)
@@ -133,12 +130,9 @@ class XHamsterProvider : MainAPI() {
         val videos = extractVideosFromInitials(initials)
 
         return videos.map { v ->
-            newMovieSearchResponse(
-                name = v.title,
-                url = v.pageURL,
-                type = TvType.NSFW,
+            newMovieSearchResponse(v.title, v.pageURL, TvType.NSFW) {
                 posterUrl = v.imageURL.fixUrl()
-            )
+            }
         }
     }
 
@@ -150,7 +144,6 @@ class XHamsterProvider : MainAPI() {
         val hlsMap = vmp?.get("hls") as? Map<String, Any>
         val sources = hlsMap?.get("sources") as? Map<String, String> ?: emptyMap()
         val poster = hlsMap?.get("poster") as? String ?: ""
-        val modelInfo = vmp?.get("model") as? Map<String, Any>
         val tagsList = vmp?.get("tags") as? List<Map<String, String>> ?: emptyList()
         val catsList = vmp?.get("categories") as? List<Map<String, String>> ?: emptyList()
 
