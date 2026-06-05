@@ -1,8 +1,8 @@
 [
   {
     "name": "XHamsterProvider",
-    "description": "xHamster - Free Porn Videos & XXX Movies",
-    "version": 2,
+    "description": "XHamster - Free Porn Videos & XXX Movies",
+    "version": 1,
     "internalName": "XHamsterProvider",
     "apiVersion": 1,
     "language": "en",
@@ -12,7 +12,7 @@
     "iconUrl": "https://www.google.com/s2/favicons?domain=xhamster.com&sz=%size%",
     "url": "https://github.com/AiCurv/cloudstream-extensions/releases/download/v1.1.0/XHamsterProvider.cs3",
     "repositoryUrl": "https://github.com/AiCurv/cloudstream-extensions",
-    "fileHash": "sha256-d53cca5ee9a6f931dd90bbbbc28747133d9df026989a505628ed5fcb86a97ace",
+    "fileHash": "sha256-9c237651df9f7a85d4b2d939e4cac50b77ee41320217592644aeedb8796628ce",
     "fileSize": 18055
   }
 ]
