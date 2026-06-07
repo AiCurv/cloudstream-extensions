@@ -10,9 +10,9 @@
     "tvTypes": ["NSFW"],
     "status": 1,
     "iconUrl": "https://www.google.com/s2/favicons?domain=xhamster.com&sz=%size%",
-    "url": "https://github.com/AiCurv/cloudstream-extensions/releases/download/v1.1.0/XHamsterProvider.cs3",
+    "url": "https://github.com/AiCurv/cloudstream-extensions/releases/download/v1.0.0/XHamsterProvider.cs3",
     "repositoryUrl": "https://github.com/AiCurv/cloudstream-extensions",
-    "fileHash": "sha256-9c237651df9f7a85d4b2d939e4cac50b77ee41320217592644aeedb8796628ce",
-    "fileSize": 18055
+    "fileHash": "sha256-013cfc38423ceda149dc9a8baf5c83e98288604404022ad5fe52f9e20c5e778a",
+    "fileSize": 15927
   }
 ]
